@@ -13,16 +13,16 @@ void loop()
 {
   // Luz verde 3000
   digitalWrite(8, HIGH); 
-  delay(2000);
+  delay(4000);
   digitalWrite(8, LOW);
     
   // Luz amarilla 3000
   digitalWrite(12, HIGH); 
-  delay(1000);
+  delay(2000);
   digitalWrite(12, LOW);
 
   // Luz roja 30000
   digitalWrite(13, HIGH); 
-  delay(2000);
+  delay(4000);
   digitalWrite(13, LOW);
 }
