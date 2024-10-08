@@ -4,8 +4,8 @@
 void setup()
 {
   // Led
-  pinMode(13, OUTPUT); // Rojo
-  pinMode(12, OUTPUT); // Amarillo
+  pinMode(10, OUTPUT); // Rojo
+  pinMode(9, OUTPUT); // Amarillo
   pinMode(8, OUTPUT);  // Verde
 }
 
@@ -17,12 +17,12 @@ void loop()
   digitalWrite(8, LOW);
     
   // Luz amarilla 3000
-  digitalWrite(12, HIGH); 
+  digitalWrite(9, HIGH); 
   delay(2000);
-  digitalWrite(12, LOW);
+  digitalWrite(9, LOW);
 
   // Luz roja 30000
-  digitalWrite(13, HIGH); 
+  digitalWrite(10, HIGH); 
   delay(4000);
-  digitalWrite(13, LOW);
+  digitalWrite(10, LOW);
 }

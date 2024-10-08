@@ -6,9 +6,9 @@
 void setup()
 {
   // Led
-  pinMode(13, OUTPUT); // Rojo
-  pinMode(12, OUTPUT); // Amarillo
-  pinMode(8, OUTPUT);  // Verde
+  pinMode(8, OUTPUT); // Rojo
+  pinMode(9, OUTPUT); // Amarillo
+  pinMode(10, OUTPUT);  // Verde
 
   pinMode(2, INPUT; // Led para ver si funciona el boton
 }
