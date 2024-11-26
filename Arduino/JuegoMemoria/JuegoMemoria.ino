@@ -1,3 +1,8 @@
+/* 
+Desarrollado por: Juan Jose Benites Coronel
+
+positivo - boton - resitencia - negativo
+*/
 // Definición de pines y constantes
 const int NUM_LEDS = 5;                // Número de LEDs y botones
 const int MAX_SEQUENCE = 5;            // Secuencia máxima de LEDs
@@ -147,6 +152,7 @@ void perderJuego() {
   }
 
   // Reiniciar el juego
+  generarSecuencia();        // Genera una nueva secuencia aleatoria
   nivel = MIN_SEQUENCE;      // Reinicia al nivel mínimo (2 LEDs)
   perder = false;            // Reinicia el indicador de pérdida
   delay(1000);               // Pausa antes de comenzar de nuevo
@@ -170,4 +176,9 @@ void celebrarVictoria() {
     }
     delay(200);
   }
+
+  // Reiniciar el juego
+  generarSecuencia();        // Genera una nueva secuencia aleatoria
+  nivel = MIN_SEQUENCE;      // Reinicia al nivel mínimo (2 LEDs)
+  delay(1000);               // Pausa antes de comenzar de nuevo
 }
