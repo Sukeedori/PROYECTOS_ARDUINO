@@ -5,7 +5,7 @@
 #define IN4  9  // Entrada IN4 del ULN2003AN conectada al pin D9 del Arduino
 
 // Secuencia de pasos para controlar el motor de pasos 28BYJ-48
-int stepSequence[8][4] = {
+const int stepSequence[8][4] = {
   {1, 0, 0, 0},  // Paso 1
   {1, 1, 0, 0},  // Paso 2
   {0, 1, 0, 0},  // Paso 3
@@ -36,15 +36,17 @@ void setup() {
 
 void loop() {
   // Girar varias revoluciones completas en sentido horario
+  Serial.println("Girando en sentido horario...");
   rotateSteps(2048 * 5, 1); // 2048 pasos por revolución, 5 revoluciones
   delay(1000);
 
   // Girar varias revoluciones completas en sentido antihorario
+  Serial.println("Girando en sentido antihorario...");
   rotateSteps(2048 * 5, -1); // 2048 pasos por revolución, 5 revoluciones
   delay(1000);
 
-  // Gira indefinidamente en sentido horario (si deseas)
-  // rotateIndefinitely(1);
+  // Puedes habilitar esta línea si necesitas giro indefinido
+  // rotateIndefinitely(1, 5); // Sentido horario, 5 ms por paso
 }
 
 // Función para controlar el motor paso a paso
@@ -63,7 +65,7 @@ void rotateSteps(int steps, int direction) {
     }
 
     // Retardo para ajustar la velocidad
-    delay(2); // Ajusta este valor para cambiar la velocidad del motor
+    delay(1); // Ajusta este valor para cambiar la velocidad del motor
   }
 }
 
@@ -75,8 +77,8 @@ void stepMotor(int step) {
   digitalWrite(IN4, stepSequence[step][3]);
 }
 
-// Función para girar indefinidamente
-void rotateIndefinitely(int direction) {
+// Función para girar indefinidamente con velocidad ajustable
+void rotateIndefinitely(int direction, int speed) {
   while (true) {
     stepMotor(currentStep);
 
@@ -88,7 +90,6 @@ void rotateIndefinitely(int direction) {
       if (currentStep < 0) currentStep = 7;
     }
 
-    delay(2);
+    delay(speed); // Ajusta este valor para cambiar la velocidad del motor
   }
 }
-m
