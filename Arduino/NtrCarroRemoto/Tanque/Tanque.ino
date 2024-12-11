@@ -1,88 +1,185 @@
+#include <Servo.h>
 #include <SoftwareSerial.h>
 
-// Definición de pines del módulo Bluetooth
+// Bluetooth
 #define BT_RX 2
 #define BT_TX 3
-
 SoftwareSerial Bluetooth(BT_RX, BT_TX);
 
-// Definición de pines para el motor
-#define IN1 6
-#define IN2 7
-#define IN3 8
-#define IN4 9
+// Motores DC para movimiento del tanque
+#define MOTOR_LEFT_PWM 5
+#define MOTOR_LEFT_DIR 4
+#define MOTOR_RIGHT_PWM 6
+#define MOTOR_RIGHT_DIR 7
 
-// Variable de control para el estado del motor
-bool motorActivo = false;
+// Servos
+Servo servoUltrasonic;  // Servo para mover el sensor ultrasónico
+Servo servoGarraUpDown; // Servo para subir/bajar la garra
+Servo servoGarraOpenClose; // Servo para abrir/cerrar la garra
+
+#define ULTRASONIC_TRIG 8
+#define ULTRASONIC_ECHO 9
+
+// Variables
+bool modoAutomatico = false;
 
 void setup() {
-  // Configurar pines del motor como salida
-  pinMode(IN1, OUTPUT);
-  pinMode(IN2, OUTPUT);
-  pinMode(IN3, OUTPUT);
-  pinMode(IN4, OUTPUT);
+  // Configuración de motores DC
+  pinMode(MOTOR_LEFT_PWM, OUTPUT);
+  pinMode(MOTOR_LEFT_DIR, OUTPUT);
+  pinMode(MOTOR_RIGHT_PWM, OUTPUT);
+  pinMode(MOTOR_RIGHT_DIR, OUTPUT);
 
-  // Inicializar pines en LOW
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, LOW);
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, LOW);
+  // Configuración de sensor ultrasónico
+  pinMode(ULTRASONIC_TRIG, OUTPUT);
+  pinMode(ULTRASONIC_ECHO, INPUT);
 
-  // Configurar comunicación serial
-  Serial.begin(9600);      // Para depuración por USB
-  Bluetooth.begin(9600);   // Configuración del módulo Bluetooth
+  // Configuración de servos
+  servoUltrasonic.attach(10); // Servo para sensor ultrasónico
+  servoGarraUpDown.attach(11); // Servo para subir/bajar garra
+  servoGarraOpenClose.attach(12); // Servo para abrir/cerrar garra
 
-  Serial.println("Esperando comandos Bluetooth...");
+  // Posición inicial de los servos
+  servoUltrasonic.write(90);
+  servoGarraUpDown.write(90);
+  servoGarraOpenClose.write(90);
+
+  // Configuración de Bluetooth
+  Serial.begin(9600);
+  Bluetooth.begin(9600);
+
+  Serial.println("Sistema listo. Esperando comandos...");
 }
 
 void loop() {
-  // Leer y manejar comandos Bluetooth
   if (Bluetooth.available()) {
-    char command = Bluetooth.read(); // Leer el comando
+    char command = Bluetooth.read();
     Serial.print("Comando recibido: ");
     Serial.println(command);
 
-    if (command == 'A') {
-      Serial.println("Motor activado, girando en sentido horario...");
-      motorActivo = true;
-    } else if (command == 'S') {
-      Serial.println("Motor detenido.");
-      motorActivo = false;
-      detenerMotor();
-    } else {
-      Serial.println("Comando no reconocido.");
+    switch (command) {
+      case 'A': // Cambiar a modo automático
+        Serial.println("Modo automático activado.");
+        modoAutomatico = true;
+        break;
+      case 'M': // Cambiar a modo manual
+        Serial.println("Modo manual activado.");
+        modoAutomatico = false;
+        detenerTanque();
+        break;
+      case 'F': // Avanzar
+        if (!modoAutomatico) avanzar();
+        break;
+      case 'B': // Retroceder
+        if (!modoAutomatico) retroceder();
+        break;
+      case 'L': // Girar izquierda
+        if (!modoAutomatico) girarIzquierda();
+        break;
+      case 'R': // Girar derecha
+        if (!modoAutomatico) girarDerecha();
+        break;
+      case 'U': // Subir la garra
+        moverGarraVertical(180); // Posición arriba
+        break;
+      case 'D': // Bajar la garra
+        moverGarraVertical(0); // Posición abajo
+        break;
+      case 'O': // Abrir la garra
+        moverPinza(180); // Posición abierta
+        break;
+      case 'C': // Cerrar la garra
+        moverPinza(0); // Posición cerrada
+        break;
+      default:
+        Serial.println("Comando no reconocido.");
+        break;
     }
   }
 
-  // Mover el motor si está activo
-  if (motorActivo) {
-    motorHorario();
+  if (modoAutomatico) {
+    ejecutarModoAutomatico();
   }
 }
 
-// Secuencia para girar el motor en sentido horario
-void motorHorario() {
-  digitalWrite(IN1, HIGH);
-  delay(10);  // Velocidad del motor
-  digitalWrite(IN1, LOW);
-
-  digitalWrite(IN2, HIGH);
-  delay(10);
-  digitalWrite(IN2, LOW);
-
-  digitalWrite(IN3, HIGH);
-  delay(10);
-  digitalWrite(IN3, LOW);
-
-  digitalWrite(IN4, HIGH);
-  delay(10);
-  digitalWrite(IN4, LOW);
+// Funciones de movimiento del tanque
+void avanzar() {
+  analogWrite(MOTOR_LEFT_PWM, 255);
+  digitalWrite(MOTOR_LEFT_DIR, HIGH);
+  analogWrite(MOTOR_RIGHT_PWM, 255);
+  digitalWrite(MOTOR_RIGHT_DIR, HIGH);
 }
 
-// Secuencia para detener el motor
-void detenerMotor() {
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, LOW);
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, LOW);
+void retroceder() {
+  analogWrite(MOTOR_LEFT_PWM, 255);
+  digitalWrite(MOTOR_LEFT_DIR, LOW);
+  analogWrite(MOTOR_RIGHT_PWM, 255);
+  digitalWrite(MOTOR_RIGHT_DIR, LOW);
+}
+
+void girarIzquierda() {
+  analogWrite(MOTOR_LEFT_PWM, 255);
+  digitalWrite(MOTOR_LEFT_DIR, LOW);
+  analogWrite(MOTOR_RIGHT_PWM, 255);
+  digitalWrite(MOTOR_RIGHT_DIR, HIGH);
+}
+
+void girarDerecha() {
+  analogWrite(MOTOR_LEFT_PWM, 255);
+  digitalWrite(MOTOR_LEFT_DIR, HIGH);
+  analogWrite(MOTOR_RIGHT_PWM, 255);
+  digitalWrite(MOTOR_RIGHT_DIR, LOW);
+}
+
+void detenerTanque() {
+  analogWrite(MOTOR_LEFT_PWM, 0);
+  analogWrite(MOTOR_RIGHT_PWM, 0);
+}
+
+// Funciones para los servos
+void moverGarraVertical(int angulo) {
+  servoGarraUpDown.write(angulo);
+}
+
+void moverPinza(int angulo) {
+  servoGarraOpenClose.write(angulo);
+}
+
+// Sensor ultrasónico
+long medirDistancia() {
+  digitalWrite(ULTRASONIC_TRIG, LOW);
+  delayMicroseconds(2);
+  digitalWrite(ULTRASONIC_TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(ULTRASONIC_TRIG, LOW);
+
+  long duracion = pulseIn(ULTRASONIC_ECHO, HIGH);
+  return duracion / 58; // Distancia en cm
+}
+
+// Modo automático
+void ejecutarModoAutomatico() {
+  avanzar();
+  long distancia = medirDistancia();
+  if (distancia < 20) { // Si hay un obstáculo
+    detenerTanque();
+    servoUltrasonic.write(0);  // Mirar a la izquierda
+    delay(500);
+    long izquierda = medirDistancia();
+
+    servoUltrasonic.write(180); // Mirar a la derecha
+    delay(500);
+    long derecha = medirDistancia();
+
+    servoUltrasonic.write(90); // Volver al frente
+    delay(500);
+
+    if (izquierda > derecha) {
+      girarIzquierda();
+    } else {
+      girarDerecha();
+    }
+    delay(1000); // Tiempo para girar
+    detenerTanque();
+  }
 }
