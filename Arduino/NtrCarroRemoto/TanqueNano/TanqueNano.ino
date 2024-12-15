@@ -23,6 +23,10 @@ SoftwareSerial Bluetooth(BT_RX, BT_TX);
 #define SERVO2_PIN A0 // A0 en Arduino Nano
 #define SERVO3_PIN A1 // A1 en Arduino Nano
 
+// Pines para el sensor ultrasónico
+#define TRIG_PIN A2 // A2 en Arduino Nano
+#define ECHO_PIN A3 // A3 en Arduino Nano
+
 Servo servo1;
 Servo servo2;
 Servo servo3;
@@ -53,6 +57,10 @@ void setup() {
   servo1.write(servo1Pos);
   servo2.write(servo2Pos);
   servo3.write(servo3Pos);
+
+  // Configuración de pines del sensor ultrasónico
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
 
   // Configuración de comunicación serial
   Serial.begin(9600);
@@ -118,6 +126,9 @@ void loop() {
         servo3Pos = max(servo3Pos - 10, 0);
         servo3.write(servo3Pos);
         break;
+      case 'U': // Leer distancia del sensor ultrasónico
+        measureDistance();
+        break;
       default:
         Serial.println("Comando no reconocido.");
         break;
@@ -154,4 +165,24 @@ void stopMotors() {
   digitalWrite(STEP2_IN2, LOW);
   digitalWrite(STEP2_IN3, LOW);
   digitalWrite(STEP2_IN4, LOW);
+}
+
+void measureDistance() {
+  // Enviar pulso del sensor ultrasónico
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+
+  // Medir el tiempo del eco
+  long duration = pulseIn(ECHO_PIN, HIGH);
+
+  // Calcular la distancia en cm
+  float distance = duration * 0.034 / 2;
+
+  // Mostrar la distancia
+  Serial.print("Distancia medida: ");
+  Serial.print(distance);
+  Serial.println(" cm");
 }
