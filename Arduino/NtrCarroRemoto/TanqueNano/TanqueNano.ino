@@ -36,6 +36,9 @@ int servo1Pos = 90;
 int servo2Pos = 90;
 int servo3Pos = 90;
 
+// Modo de funcionamiento: 0 - Manual, 1 - Automático
+int mode = 0;
+
 void setup() {
   // Configuración de pines para motores paso a paso
   pinMode(STEP1_IN1, OUTPUT);
@@ -65,79 +68,169 @@ void setup() {
   // Configuración de comunicación serial
   Serial.begin(9600);
   Bluetooth.begin(9600);
-  Serial.println("Sistema listo. Esperando comandos Bluetooth...");
+  Serial.println("Sistema listo. Modo: Manual (presiona 'M' para cambiar a automático)");
 }
 
 void loop() {
-  // Verificar si hay datos disponibles desde Bluetooth
+  // Mostrar la distancia constantemente
+  float distance = measureDistance();
+  Serial.print("Distancia medida: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+
+  // Cambiar modo de funcionamiento
   if (Bluetooth.available()) {
     char command = Bluetooth.read();
 
-    // Filtrar caracteres adicionales
-    if (command == '\r' || command == '\n') {
-      return; // Ignorar caracteres no deseados
+    if (command == 'M' || command == 'm') {
+      mode = !mode;
+      Serial.print("Modo cambiado a: ");
+      Serial.println(mode == 0 ? "Manual" : "Automático");
     }
 
-    Serial.print("Comando recibido: ");
-    Serial.print(command);
-    Serial.print(" (ASCII: ");
-    Serial.print((int)command);
-    Serial.println(")");
-
-    // Procesar comandos
-    switch (command) {
-      case 'A': // Motor 1 hacia adelante
-        rotateStepper(STEP1_IN1, STEP1_IN2, STEP1_IN3, STEP1_IN4, 1);
-        break;
-      case 'B': // Motor 1 hacia atrás
-        rotateStepper(STEP1_IN1, STEP1_IN2, STEP1_IN3, STEP1_IN4, -1);
-        break;
-      case 'C': // Motor 2 hacia adelante
-        rotateStepper(STEP2_IN1, STEP2_IN2, STEP2_IN3, STEP2_IN4, 1);
-        break;
-      case 'D': // Motor 2 hacia atrás
-        rotateStepper(STEP2_IN1, STEP2_IN2, STEP2_IN3, STEP2_IN4, -1);
-        break;
-      case 'S': // Detener motores
-        stopMotors();
-        break;
-      // Control de servos con botones para izquierda y derecha
-      case 'X': // Servo 1 mover a la derecha
-        servo1Pos = min(servo1Pos + 10, 180);
-        servo1.write(servo1Pos);
-        break;
-      case 'x': // Servo 1 mover a la izquierda
-        servo1Pos = max(servo1Pos - 10, 0);
-        servo1.write(servo1Pos);
-        break;
-      case 'Y': // Servo 2 mover a la derecha
-        servo2Pos = min(servo2Pos + 10, 180);
-        servo2.write(servo2Pos);
-        break;
-      case 'y': // Servo 2 mover a la izquierda
-        servo2Pos = max(servo2Pos - 10, 0);
-        servo2.write(servo2Pos);
-        break;
-      case 'Z': // Servo 3 mover a la derecha
-        servo3Pos = min(servo3Pos + 10, 180);
-        servo3.write(servo3Pos);
-        break;
-      case 'z': // Servo 3 mover a la izquierda
-        servo3Pos = max(servo3Pos - 10, 0);
-        servo3.write(servo3Pos);
-        break;
-      case 'U': // Leer distancia del sensor ultrasónico
-        measureDistance();
-        break;
-      default:
-        Serial.println("Comando no reconocido.");
-        break;
+    if (mode == 0) {
+      handleManualMode(command);
     }
+  }
+
+  if (mode == 1) {
+    handleAutomaticMode(distance);
   }
 }
 
+void handleManualMode(char command) {
+  switch (command) {
+    case 'F': // Adelante
+      moveForward();
+      break;
+    case 'B': // Atrás
+      moveBackward();
+      break;
+    case 'L': // Izquierda
+      turnLeft();
+      break;
+    case 'R': // Derecha
+      turnRight();
+      break;
+    case 'S': // Detener
+      stopMotors();
+      break;
+    case 'G': // Garra arriba
+      servo1Pos = min(servo1Pos + 10, 50);
+      servo1.write(servo1Pos);
+      break;
+    case 'g': // Garra abajo
+      servo1Pos = max(servo1Pos - 10, 0);
+      servo1.write(servo1Pos);
+      break;
+    case 'O': // Garra abrir
+      servo2Pos = max(servo2Pos - 10, 0);
+      servo2.write(servo2Pos);
+      break;
+    case 'C': // Garra cerrar
+      servo2Pos = min(servo2Pos + 10, 130);
+      servo2.write(servo2Pos);
+      break;
+    case 'Z': // Sensor izquierda
+      servo3Pos = max(servo3Pos - 10, 0);
+      servo3.write(servo3Pos);
+      break;
+    case 'X': // Sensor derecha
+      servo3Pos = min(servo3Pos + 10, 180);
+      servo3.write(servo3Pos);
+      break;
+    default:
+      Serial.println("Comando no reconocido en modo manual.");
+      break;
+  }
+}
+
+void handleAutomaticMode(float distance) {
+  // Mantener el servo del sensor ultrasónico al frente
+  servo3.write(90);
+
+  if (distance < 10) {
+    stopMotors();
+    delay(500);
+
+    // Revisar a la izquierda
+    servo3.write(0);
+    delay(500);
+    float leftDistance = measureDistance();
+
+    // Revisar a la derecha
+    servo3.write(180);
+    delay(500);
+    float rightDistance = measureDistance();
+
+    // Volver al frente
+    servo3.write(90);
+
+    // Decidir la dirección
+    if (leftDistance > rightDistance) {
+      turnLeft();
+      delay(500);
+    } else if (rightDistance > leftDistance) {
+      turnRight();
+      delay(500);
+    } else {
+      // En caso de empate, girar de forma aleatoria
+      if (random(0, 2) == 0) {
+        turnLeft();
+      } else {
+        turnRight();
+      }
+      delay(500);
+    }
+  } else {
+    moveForward();
+  }
+}
+
+float measureDistance() {
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+
+  long duration = pulseIn(ECHO_PIN, HIGH);
+  return duration * 0.034 / 2;
+}
+
+void moveForward() {
+  rotateStepper(STEP1_IN1, STEP1_IN2, STEP1_IN3, STEP1_IN4, 1);
+  rotateStepper(STEP2_IN1, STEP2_IN2, STEP2_IN3, STEP2_IN4, 1);
+}
+
+void moveBackward() {
+  rotateStepper(STEP1_IN1, STEP1_IN2, STEP1_IN3, STEP1_IN4, -1);
+  rotateStepper(STEP2_IN1, STEP2_IN2, STEP2_IN3, STEP2_IN4, -1);
+}
+
+void turnLeft() {
+  rotateStepper(STEP1_IN1, STEP1_IN2, STEP1_IN3, STEP1_IN4, -1);
+  rotateStepper(STEP2_IN1, STEP2_IN2, STEP2_IN3, STEP2_IN4, 1);
+}
+
+void turnRight() {
+  rotateStepper(STEP1_IN1, STEP1_IN2, STEP1_IN3, STEP1_IN4, 1);
+  rotateStepper(STEP2_IN1, STEP2_IN2, STEP2_IN3, STEP2_IN4, -1);
+}
+
+void stopMotors() {
+  digitalWrite(STEP1_IN1, LOW);
+  digitalWrite(STEP1_IN2, LOW);
+  digitalWrite(STEP1_IN3, LOW);
+  digitalWrite(STEP1_IN4, LOW);
+
+  digitalWrite(STEP2_IN1, LOW);
+  digitalWrite(STEP2_IN2, LOW);
+  digitalWrite(STEP2_IN3, LOW);
+  digitalWrite(STEP2_IN4, LOW);
+}
+
 void rotateStepper(int in1, int in2, int in3, int in4, int direction) {
-  // Secuencia básica para el motor paso a paso (4 pasos)
   int steps[4][4] = {
     {1, 0, 0, 1},
     {1, 0, 0, 0},
@@ -150,39 +243,6 @@ void rotateStepper(int in1, int in2, int in3, int in4, int direction) {
     digitalWrite(in2, steps[step][1]);
     digitalWrite(in3, steps[step][2]);
     digitalWrite(in4, steps[step][3]);
-    delay(10); // Ajustar para controlar la velocidad
+    delay(5); // Reducir delay para aumentar velocidad
   }
-}
-
-void stopMotors() {
-  // Detener ambos motores
-  digitalWrite(STEP1_IN1, LOW);
-  digitalWrite(STEP1_IN2, LOW);
-  digitalWrite(STEP1_IN3, LOW);
-  digitalWrite(STEP1_IN4, LOW);
-
-  digitalWrite(STEP2_IN1, LOW);
-  digitalWrite(STEP2_IN2, LOW);
-  digitalWrite(STEP2_IN3, LOW);
-  digitalWrite(STEP2_IN4, LOW);
-}
-
-void measureDistance() {
-  // Enviar pulso del sensor ultrasónico
-  digitalWrite(TRIG_PIN, LOW);
-  delayMicroseconds(2);
-  digitalWrite(TRIG_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TRIG_PIN, LOW);
-
-  // Medir el tiempo del eco
-  long duration = pulseIn(ECHO_PIN, HIGH);
-
-  // Calcular la distancia en cm
-  float distance = duration * 0.034 / 2;
-
-  // Mostrar la distancia
-  Serial.print("Distancia medida: ");
-  Serial.print(distance);
-  Serial.println(" cm");
 }
