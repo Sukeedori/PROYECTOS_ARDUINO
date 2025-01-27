@@ -8,7 +8,6 @@
 #define SERVO1_PIN 12 // D12 en Arduino Nano
 #define SERVO2_PIN A0 // A0 en Arduino Nano
 #define SERVO3_PIN A1 // A1 en Arduino Nano
-
 Servo servo1;
 Servo servo2;
 Servo servo3;
