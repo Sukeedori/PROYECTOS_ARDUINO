@@ -47,16 +47,16 @@ void loop() {
     // Activar motores según el comando
     if (command == 'A') {  // Adelante
       Serial.println("Moviendo ambos motores hacia adelante.");
-      moveMotors(1, 1, 3000); // Ambos motores hacia adelante por 3 segundos
+      moveMotors(1, 1, 2000); // Ambos motores hacia adelante por 3 segundos
     } else if (command == 'B') { // Atrás
       Serial.println("Moviendo ambos motores hacia atrás.");
-      moveMotors(-1, -1, 3000); // Ambos motores hacia atrás por 3 segundos
+      moveMotors(-1, -1, 2000); // Ambos motores hacia atrás por 3 segundos
     } else if (command == 'L') { // Izquierda
       Serial.println("Girando a la izquierda.");
-      moveMotors(-1, 1, 3000); // Motor 1 atrás, Motor 2 adelante por 3 segundos
+      moveMotors(-1, 1, 2000); // Motor 1 atrás, Motor 2 adelante por 3 segundos
     } else if (command == 'R') { // Derecha
       Serial.println("Girando a la derecha.");
-      moveMotors(1, -1, 3000); // Motor 1 adelante, Motor 2 atrás por 3 segundos
+      moveMotors(1, -1, 2000); // Motor 1 adelante, Motor 2 atrás por 3 segundos
     } else {
       Serial.println("Comando no reconocido.");
       bluetooth.println("Comando no reconocido.");
