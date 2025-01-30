@@ -35,9 +35,9 @@ int servo1PosFinal = 20;   // Posición final del Servo 1
 int servo2PosInicial = 0;  // Posición inicial del Servo 2 (abrir/cerrar)
 int servo2PosFinal = 80;   // Posición final del Servo 2
 
-int servo3Centro = 5;      // Posición central del sensor ultrasónico
-int servo3Izquierda = 90;  // Posición izquierda del sensor
-int servo3Derecha = 175;   // Posición derecha del sensor
+int servo3Centro = 90;      // Posición central del sensor ultrasónico (Corregido)
+int servo3Izquierda = 45;   // Posición izquierda del sensor
+int servo3Derecha = 135;    // Posición derecha del sensor
 
 // Secuencia de 4 pasos para motores paso a paso
 const int stepSequence[4][4] = {
@@ -113,8 +113,8 @@ void handleBluetoothCommand(char command) {
     case 'O': servo2.write(servo2PosFinal); break;  // Abrir la garra
     case 'C': servo2.write(servo2PosInicial); break; // Cerrar la garra
     case 'Z': servo3.write(servo3Izquierda); break; // Mover sensor a la izquierda
-    case 'X': servo3.write(servo3Derecha); break; // Mover sensor a la derecha
-    case 'M': servo3.write(servo3Centro); break;  // Volver sensor al centro
+    case 'X': servo3.write(servo3Derecha); break;   // Mover sensor a la derecha
+    case 'M': servo3.write(servo3Centro); break;    // Volver sensor al centro (Corregido)
 
     // Comando para obtener distancia manualmente
     case 'D': {
@@ -138,29 +138,37 @@ void handleBluetoothCommand(char command) {
 // Función para mover hacia adelante
 void moveForward() {
   Serial.println("Moviendo hacia adelante.");
-  moveStepper(STEP1_IN1, STEP1_IN2, STEP1_IN3, STEP1_IN4, 1);
-  moveStepper(STEP2_IN1, STEP2_IN2, STEP2_IN3, STEP2_IN4, 1);
+  for (int i = 0; i < 100; i++) {
+    moveStepper(STEP1_IN1, STEP1_IN2, STEP1_IN3, STEP1_IN4, 1);
+    moveStepper(STEP2_IN1, STEP2_IN2, STEP2_IN3, STEP2_IN4, 1);
+  }
 }
 
 // Función para mover hacia atrás
 void moveBackward() {
   Serial.println("Moviendo hacia atrás.");
-  moveStepper(STEP1_IN1, STEP1_IN2, STEP1_IN3, STEP1_IN4, -1);
-  moveStepper(STEP2_IN1, STEP2_IN2, STEP2_IN3, STEP2_IN4, -1);
+  for (int i = 0; i < 100; i++) {
+    moveStepper(STEP1_IN1, STEP1_IN2, STEP1_IN3, STEP1_IN4, -1);
+    moveStepper(STEP2_IN1, STEP2_IN2, STEP2_IN3, STEP2_IN4, -1);
+  }
 }
 
 // Función para girar a la izquierda
 void turnLeft() {
   Serial.println("Girando a la izquierda.");
-  moveStepper(STEP1_IN1, STEP1_IN2, STEP1_IN3, STEP1_IN4, -1);
-  moveStepper(STEP2_IN1, STEP2_IN2, STEP2_IN3, STEP2_IN4, 1);
+  for (int i = 0; i < 50; i++) {
+    moveStepper(STEP1_IN1, STEP1_IN2, STEP1_IN3, STEP1_IN4, -1);
+    moveStepper(STEP2_IN1, STEP2_IN2, STEP2_IN3, STEP2_IN4, 1);
+  }
 }
 
 // Función para girar a la derecha
 void turnRight() {
   Serial.println("Girando a la derecha.");
-  moveStepper(STEP1_IN1, STEP1_IN2, STEP1_IN3, STEP1_IN4, 1);
-  moveStepper(STEP2_IN1, STEP2_IN2, STEP2_IN3, STEP2_IN4, -1);
+  for (int i = 0; i < 50; i++) {
+    moveStepper(STEP1_IN1, STEP1_IN2, STEP1_IN3, STEP1_IN4, 1);
+    moveStepper(STEP2_IN1, STEP2_IN2, STEP2_IN3, STEP2_IN4, -1);
+  }
 }
 
 // Función para detener motores
@@ -171,17 +179,15 @@ void stopMotors() {
   }
 }
 
-// Función para manejar los motores paso a paso con secuencia de 4 pasos
+// Función para mover motores paso a paso con secuencia correcta
 void moveStepper(int in1, int in2, int in3, int in4, int direction) {
   for (int step = 0; step < 4; step++) {
     int index = (direction > 0) ? step : (3 - step);
-
     digitalWrite(in1, stepSequence[index][0]);
     digitalWrite(in2, stepSequence[index][1]);
     digitalWrite(in3, stepSequence[index][2]);
     digitalWrite(in4, stepSequence[index][3]);
-
-    delay(5); // Velocidad del motor
+    delay(5); // Ajuste de velocidad
   }
 }
 
