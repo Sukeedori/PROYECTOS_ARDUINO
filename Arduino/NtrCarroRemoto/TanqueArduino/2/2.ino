@@ -20,20 +20,24 @@ SoftwareSerial bluetooth(2, 3);
 #define SERVO2_PIN A1  // Abrir/cerrar la garra
 #define SERVO3_PIN A2  // Mover sensor ultrasónico
 
+// Pines para el sensor ultrasónico
+#define TRIG_PIN A3
+#define ECHO_PIN A4
+
 Servo servo1;
 Servo servo2;
 Servo servo3;
 
 // Variables de posición de los servos
-int servo1PosInicial = 0; // Posición inicial del Servo 1 (subir/bajar)
+int servo1PosInicial = 0;  // Posición inicial del Servo 1 (subir/bajar)
 int servo1PosFinal = 20;   // Posición final del Servo 1
 
 int servo2PosInicial = 0;  // Posición inicial del Servo 2 (abrir/cerrar)
 int servo2PosFinal = 80;   // Posición final del Servo 2
 
 int servo3Centro = 5;      // Posición central del sensor ultrasónico
-int servo3Izquierda = 90;   // Posición izquierda del sensor
-int servo3Derecha = 175;    // Posición derecha del sensor
+int servo3Izquierda = 90;  // Posición izquierda del sensor
+int servo3Derecha = 175;   // Posición derecha del sensor
 
 // Secuencia de 4 pasos para motores paso a paso
 const int stepSequence[4][4] = {
@@ -62,16 +66,34 @@ void setup() {
   servo2.write(servo2PosInicial);
   servo3.write(servo3Centro);
 
+  // Configuración del sensor ultrasónico
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+
   Serial.println("Sistema listo. Controlar con Bluetooth.");
   bluetooth.println("Sistema listo. Envíe comandos para controlar.");
 }
 
 void loop() {
+  // Verifica si hay datos desde Bluetooth
   if (bluetooth.available()) {
     char command = bluetooth.read();
     Serial.print("Comando recibido: ");
     Serial.println(command);
     handleBluetoothCommand(command);
+  }
+
+  // Mide la distancia cada 1 segundo y la muestra en el Monitor Serial
+  static unsigned long lastMeasureTime = 0;
+  if (millis() - lastMeasureTime >= 1000) { 
+    lastMeasureTime = millis();
+    float distancia = medirDistancia();
+    Serial.print("Distancia: ");
+    Serial.print(distancia);
+    Serial.println(" cm");
+    bluetooth.print("Distancia: ");
+    bluetooth.print(distancia);
+    bluetooth.println(" cm");
   }
 }
 
@@ -93,6 +115,18 @@ void handleBluetoothCommand(char command) {
     case 'Z': servo3.write(servo3Izquierda); break; // Mover sensor a la izquierda
     case 'X': servo3.write(servo3Derecha); break; // Mover sensor a la derecha
     case 'M': servo3.write(servo3Centro); break;  // Volver sensor al centro
+
+    // Comando para obtener distancia manualmente
+    case 'D': {
+      float distancia = medirDistancia();
+      Serial.print("Distancia: ");
+      Serial.print(distancia);
+      Serial.println(" cm");
+      bluetooth.print("Distancia: ");
+      bluetooth.print(distancia);
+      bluetooth.println(" cm");
+      break;
+    }
 
     default:
       Serial.println("Comando no reconocido.");
@@ -149,4 +183,15 @@ void moveStepper(int in1, int in2, int in3, int in4, int direction) {
 
     delay(5); // Velocidad del motor
   }
+}
+
+// Función para medir la distancia con el sensor ultrasónico
+float medirDistancia() {
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+  long duration = pulseIn(ECHO_PIN, HIGH);
+  return duration * 0.034 / 2;  // Conversión a cm
 }
